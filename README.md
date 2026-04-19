@@ -1,96 +1,121 @@
 # Farm Ledger 🌾
 
-**A local, AI-assisted tax workspace that turns "the annual shoebox of documents" into a CPA-ready package.**
+**Guided tax filing, locally, with memory.**
 
-Farm Ledger is a Stardew-themed macOS app that helps you organize your tax documents across multiple years, track what's still missing, and hand off a clean package to your CPA. It runs entirely on your machine, and uses a live Claude Code terminal as a conversational interface to your own files.
+A macOS workspace that organizes your tax documents year after year — flags what's missing, cleans up filenames, remembers your whole history, and outputs one clean package for your CPA or for filing it yourself.
 
 ![Farm Ledger — three-pane UI](docs/screenshots/01-hero.png)
 
 ---
 
-## The problem
-
-Tax prep tools today are built for one of two people:
-
-- **Filers who DIY in TurboTax** — the product is a giant wizard that funnels you toward e-filing, not toward understanding or organizing your situation.
-- **Accountants who use pro software** — designed for batch client management, not for a single filer working with their own CPA.
-
-**The person who works _with_ a CPA has no tool at all.** They end up in a loop of PDF exports, Dropbox links, and emails titled "Re: Re: Re: follow-up questions for 2024." Every year they restart from scratch and every CPA-bound question lives in a different thread.
-
-Farm Ledger is built for that gap: the handoff workspace. Its end goal is never a filed return — it's a **clean, organized, auditable package** that a CPA can open and use.
-
 ## What it does
+
+- 📥 **Drop docs, AI organizes them** — Claude classifies every document (W-2, 1099-B, 1098-E, …), renames it with a consistent convention, and files it into the right year folder.
+- 🎯 **Know what's missing** — a personalized quest list per year flags the docs you haven't uploaded yet, one per employer, one per brokerage, one per benefit.
+- 🔄 **Cross-year memory** — wash-sale disallowed losses, capital-loss carryforwards, prior-year AGI, last year's filing status — all travel with you instead of being re-entered every April.
+- 🧙 **Four AI personas, four jobs** — Merlin routes your ask, Gandalf reasons about your tax profile, Morgana drills into open questions, the Ancient One reviews the full package like a senior CPA.
+- 📊 **Cross-year analytics** — AGI, tax liability, tax paid, refund, investment net gain/loss, trended across every year you've tracked.
+- 📦 **One package, your choice** — ship a clean dated ZIP to your CPA, or use it as the source of truth for filing it yourself.
+- 🔒 **Local-only, no cloud** — the app binds to `127.0.0.1`. Your SSN, income, and account numbers never leave your machine.
+- 🎨 **Stardew-inspired UI** — because tax software shouldn't be soul-sucking.
+
+## Screenshots
+
+### Drop a doc, Claude classifies it and proposes everything it'll change
 
 ![Shipping Bin mid-classification](docs/screenshots/02-shipping-bin.png)
 
-- **Drop documents into a Shipping Bin** — Claude classifies each one (W-2, 1099-B, 1098-E, etc.), renames it to a consistent convention, and proposes updates to your Profile, document inventory, and open questions. You approve every change in a modal before anything is saved.
-- **Three markdown files per year** — `Profile.md`, `Files.md`, `OpenQuestions.md`. Human-readable, human-editable, diffable in git if you want.
-- **One cross-year profile** — durable identity (name, filing status, dependents) lives in a single file that evolves with your life, not your tax year.
-- **Quest log** — a per-year checklist of "documents you're expected to have" (one quest per employer, one per brokerage, etc.). Personalizes itself as documents arrive.
-- **Wizard's Tower terminal** — a Claude Code session running inside the UI with full read/write access to your workspace. Five slash commands keep profile/questions/documents in sync via conversation rather than forms.
-- **Year types** — each year is marked `past` (already filed, Q&A only), `current` (being prepared now), or `future` (planning). Templates and checklists differ accordingly; a past year doesn't nag you for "missing" documents.
+### Three year-types with different behaviors — past years aren't nagged for "missing" docs
 
-  ![Year-type picker](docs/screenshots/03-year-types.png)
+![Year-type picker](docs/screenshots/03-year-types.png)
 
-- **Wizard's Tower conversation** — ask Claude anything about your workspace; it reads the markdown files and answers.
+### A Claude Code terminal inside the UI, with four specialist personas
 
-  ![Wizard's Tower conversation](docs/screenshots/04-wizards-tower.png)
+![Wizard's Tower with Merlin / Gandalf / Morgana tabs](docs/screenshots/04-wizards-tower.png)
 
-- **CPA handoff** — one click zips everything into a dated package.
-- **Live updates** — Server-Sent Events refresh the UI the moment any file changes, whether edited in VS Code, in the terminal, or through the UI.
+## Get started
+
+1. `git clone` this repo
+2. `brew bundle` from the repo root (installs python, node, ttyd)
+3. `npm install -g @anthropic-ai/claude-code` then `claude` (one-time sign-in)
+4. Double-click **`Launch Taxes.command`** — the UI opens at `http://127.0.0.1:5173`
+
+Full instructions in [First run](#first-run) below.
+
+---
+
+## Why I built this
+
+Tax tools today are built for one of two people:
+
+- **Filers who DIY in TurboTax** — a wizard that funnels you to e-filing, not to understanding your situation.
+- **Accountants with pro software** — for batch client management, not a single filer.
+
+**The person who works _with_ a CPA, or wants to DIY properly, has no tool at all.** They end up in a loop of PDF exports, Dropbox links, and "Re: Re: Re: tax follow-up" email threads. Every year starts from scratch. Every question lives in a different place.
+
+Farm Ledger is built for that gap: the handoff workspace. Its end goal is never a specific filing path — it's a **clean, organized, auditable, cross-year package** that you, your CPA, or any future tax software can open and use.
 
 ## Design decisions (and the tradeoffs)
 
-A few choices that are worth calling out, because they are not the obvious defaults:
+A few choices worth calling out, because they're not the obvious defaults:
 
 ### 1. Markdown files as the database
 
 There is no SQLite, no JSON blob, no server-side schema. Every fact about your tax life lives in a plain `.md` file you can open in any editor.
 
-- **Why**: Longevity (you can read a markdown file in 20 years), transparency (no black-box state), and delegation-friendly (an AI agent can read and edit a markdown file in the same way a human can).
-- **The tradeoff**: No queries, no joins, no atomic transactions. For a single-user, dozens-of-files workspace, that's fine. For multi-tenant SaaS it would be wrong.
+- **Why**: Longevity (readable in 20 years), transparency (no black-box state), delegation-friendly (an AI agent reads and edits markdown the same way a human does).
+- **The tradeoff**: No queries, no joins. Fine for a single-user workspace with dozens of files; wrong for multi-tenant SaaS.
 
 ### 2. Local-only, no cloud sync
 
-The app binds to `127.0.0.1`. There is no server, no account, no upload path. Your tax documents never leave your machine.
+The app binds to `127.0.0.1`. No server, no account, no upload path.
 
-- **Why**: The average filer's document pile contains SSNs, income history, and bank account numbers. "Trust us, it's encrypted" is not the right pitch for that data.
-- **The tradeoff**: No cross-device access. If you want to work from a second laptop, you're responsible for syncing (e.g., encrypted iCloud Drive or a USB dongle).
+- **Why**: Tax documents contain SSNs, income history, and bank account numbers. "Trust us, it's encrypted" is the wrong pitch for that data.
+- **The tradeoff**: No cross-device access. Sync via encrypted iCloud Drive or USB if you need it.
 
 ### 3. AI as interface, not as source of truth
 
-Claude reads your files, proposes changes, and writes the next edit — but every write goes through a confirmation modal or a slash command the user explicitly invokes. The AI never silently commits a number to Profile.md.
+Claude reads your files, proposes changes, and drafts the next edit — but every write goes through a confirmation modal or a slash command the user invokes. The AI never silently commits a number to your profile.
 
 - **Why**: Tax documents are legal records. An AI that "helpfully" decides your filing status is a liability, not a feature.
 - **The tradeoff**: More clicks than a fully autonomous workflow. Acceptable, because the cost of a wrong number is real money.
 
 ### 4. Years as first-class, not tabs
 
-Each tax year is its own folder with its own profile, its own document inventory, its own open questions. Facts from year N do **not** automatically propagate to year N+1.
+Each tax year is its own folder — its own profile, documents, open questions. Facts from year N do **not** auto-propagate to year N+1.
 
-- **Why**: Life changes. Marital status, state of residency, employer, dependents — all of these shift year over year, and a tool that silently carries last year's answer forward will produce quietly wrong filings.
+- **Why**: Marital status, state of residency, employer, dependents all shift. A tool that silently carries last year's answer forward will produce quietly wrong filings.
 - **The tradeoff**: Some duplication. Worth it.
 
 ### 5. Three year-types with different behaviors
 
-`past` / `current` / `future` each get a different template, a different quest checklist, and different AI prompts. A past year exists to answer questions ("how much did I contribute to the HSA in 2023?") — it doesn't need a missing-document nag screen.
+`past` / `current` / `future` each get a different template, a different quest checklist, and different AI prompts.
 
-- **Why**: A tool that treats every year identically ends up treating none of them well.
+- **Why**: A past year exists to answer questions ("how much did I contribute to the HSA in 2023?") — it shouldn't nag you for missing docs. A future year is about quarterly estimates, not W-2s. Treating every year identically means treating none of them well.
+
+### 6. Four specialist personas, not one generalist assistant
+
+Merlin (the default) routes asks; Gandalf owns the Tax Profile; Morgana reconciles Open Questions; the Ancient One runs a senior-partner review.
+
+- **Why**: A single "do-everything" AI blurs the line between brainstorming (cheap), data entry (needs confirmation), and review (needs full context). Separating them by job lets each one have the right guardrails, prompts, and scope.
+- **The tradeoff**: More complexity up front. Users have to learn the roster. The payoff is that no single persona ever does something outside its lane.
 
 ## Roadmap
 
 Rough priorities, not commitments:
 
-- **Screenshots + 90-second demo GIF** — the highest-leverage next artifact.
-- **Fictional-persona demo mode** — so a reviewer can clone the repo and see a populated workspace without needing their own tax docs.
-- **Windows / Linux launcher parity** — currently Mac-only because of the `.app` bundle and LaunchServices integration.
+- **90-second demo GIF** — higher-leverage than any more text.
+- **Fictional-persona demo mode** — so a reviewer can clone the repo and see a populated workspace without their own tax docs.
+- **Windows / Linux launcher parity** — currently Mac-only.
 - **Cross-year delta view** — "what changed between 2024 and 2025" as a first-class screen.
 - **Two-way CPA channel** — export format the CPA can annotate and send back, closing the loop.
+
+---
 
 ## Requirements
 
 - **macOS** (the `.app` bundle + LaunchServices integration are Mac-specific)
-- **Homebrew** for installing the three runtime dependencies
+- **Homebrew** for the three runtime dependencies
 
 ## First run
 
@@ -99,7 +124,7 @@ Rough priorities, not commitments:
    ```
    brew bundle
    ```
-   This installs `python@3.12`, `node`, and `ttyd`.
+   Installs `python@3.12`, `node`, and `ttyd`.
 3. **Install the Claude Code CLI** (published on npm):
    ```
    npm install -g @anthropic-ai/claude-code
@@ -108,30 +133,28 @@ Rough priorities, not commitments:
    ```
    claude
    ```
-   Follow the prompts to sign in. The Wizard's Tower pane and the document classifier both call this CLI — they won't work until it's authenticated.
-5. **Launch the app** — preferred: double-click **`Launch Taxes.command`**. Terminal will flash briefly and close on its own.
-   - Alternative: double-click **`Farm Ledger.app`**. On first launch macOS Gatekeeper will refuse to open it because the bundle isn't notarized; **right-click → Open → Open** in the confirmation dialog, once. If Gatekeeper still blocks it, fall back to `Launch Taxes.command`.
-6. The browser opens to `http://127.0.0.1:5173` and a welcome wizard runs:
-   - Asks for your name, filing status, residency, dependents → writes `Farm Ledger/YearData/MDDocs/Profile.md`.
-   - Prompts for a first year folder.
+   The Wizard's Tower pane and the document classifier both call this CLI — they won't work until it's authenticated.
+5. **Launch the app** — preferred: double-click **`Launch Taxes.command`**. Terminal flashes briefly and closes on its own.
+   - Alternative: double-click **`Farm Ledger.app`**. On first launch macOS Gatekeeper will refuse to open it because the bundle isn't notarized; **right-click → Open → Open** in the confirmation dialog, once.
+6. The browser opens to `http://127.0.0.1:5173` and a welcome wizard runs — asks for your name, filing status, residency, dependents, and creates your first year folder.
 7. Start dropping documents into the Shipping Bin and/or chatting with Claude in the Wizard's Tower pane.
 
-Delete any of the markdown files and the app regenerates them from templates on next launch.
+Delete any markdown file and the app regenerates it from templates on next launch.
 
 ## What lives where
 
 ```
-Farm Ledger/                  The app code (Flask + static assets).
+Farm Ledger/                  App code (Flask + static assets).
   app.py
   checklist.py                ← Edit to customize which documents your checklist expects.
-  CLAUDE.md.template          ← Master copy used to restore CLAUDE.md if the user removes it.
+  CLAUDE.md.template          Master copy restored if root CLAUDE.md is removed.
   static/ templates/
   requirements.txt
   YearData/                   All user data (gitignored). Created on first launch.
     MDDocs/
       Profile.md              Cross-year identity.
       Analytics.md            Auto-generated cross-year dashboard.
-    <YEAR>/                   One folder per filing year, created via the UI's "+ New Year" wizard.
+    <YEAR>/                   One folder per filing year.
       Profile.md, Files.md, OpenQuestions.md, _meta.json, input/
 
 CLAUDE.md                     Instructions the Wizard's Tower Claude reads.
@@ -141,8 +164,6 @@ Launch Taxes.command          Fallback terminal launcher.
 ```
 
 ## Configuration
-
-Environment variables read at startup:
 
 - `FARM_LEDGER_DATA_ROOT` — override the data directory. Defaults to `Farm Ledger/YearData/`. Useful for Docker volume mounts, encrypted disks, or test fixtures.
 
@@ -155,11 +176,11 @@ Environment variables read at startup:
 - **Your tax documents never leave your machine.** The app binds to `127.0.0.1` only; `input/` files are read, classified, and renamed entirely on your local filesystem.
 - **Document classification is done by the Claude CLI you're already signed into** — no separate API key is stored, no third-party service sees your documents beyond what Anthropic normally receives when you use Claude Code.
 - **The UI is fully self-contained.** All assets — fonts, icons, styles — are served from the local Flask server. No CDN calls, no analytics, no telemetry.
-- **The only outbound network traffic** comes from the `claude` CLI (model inference against Anthropic's API, authenticated as you) and from Homebrew when you install or upgrade dependencies. The Farm Ledger code itself makes no outbound requests.
+- **The only outbound network traffic** comes from the `claude` CLI (model inference against Anthropic's API, authenticated as you) and from Homebrew when installing dependencies.
 
 ## Acknowledgements
 
-- UI typefaces: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) and [VT323](https://fonts.google.com/specimen/VT323), both under the SIL Open Font License.
+- UI typefaces: [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) and [VT323](https://fonts.google.com/specimen/VT323), SIL Open Font License.
 - Visual inspiration: Stardew Valley by ConcernedApe.
 - Built with Claude Code.
 
