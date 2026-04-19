@@ -1,3 +1,5 @@
+<img src="docs/screenshots/icon.png" align="right" width="96" alt="Farm Ledger icon" />
+
 # Farm Ledger 🌾
 
 **Guided tax filing, locally, with memory.**
