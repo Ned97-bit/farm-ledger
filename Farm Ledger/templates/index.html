@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Farm Ledger</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header>
+  <h1>Farm Ledger</h1>
+  <nav id="year-tabs"></nav>
+  <div id="year-dropdown-wrap"></div>
+  <div id="tax-day-countdown" class="hidden"></div>
+  <button id="new-year-btn" title="Start a new year">+ New Year</button>
+  <button id="ancient-btn" title="Premium CPA review by the Ancient One">🔮 Consult the Ancient One</button>
+  <button id="export-btn" title="Ship CPA package">Ship to CPA</button>
+</header>
+<main>
+  <div id="left-col">
+    <section id="global-btn-pane" class="clickable-pane" role="button" tabindex="0" title="Open cross-year identity profile">
+      <h2>Global Profile</h2>
+      <p class="pane-hint">Stable facts across all years →</p>
+    </section>
+    <section id="profile-btn-pane" class="clickable-pane" role="button" tabindex="0" title="Open this year's tax profile">
+      <h2>Tax Profile</h2>
+      <p class="pane-hint">This year's situation →</p>
+    </section>
+    <section id="files-btn-pane" class="clickable-pane" role="button" tabindex="0" title="Open document inventory">
+      <h2>Documents</h2>
+      <p class="pane-hint"><span id="files-count">0</span> file(s) catalogued →</p>
+    </section>
+    <section id="checklist-pane">
+      <h2>Quests</h2>
+      <div id="checklist"></div>
+    </section>
+  </div>
+  <div id="middle-col">
+    <section id="viewer-pane">
+      <div id="viewer-header">
+        <h2 id="viewer-title">Inspect</h2>
+        <div id="viewer-actions" class="hidden">
+          <button id="viewer-reveal" aria-label="Reveal in Finder" title="Reveal in Finder">📂</button>
+          <button id="viewer-close" aria-label="Close file" title="Close">✕</button>
+        </div>
+      </div>
+      <div id="viewer">Click a document to read it.</div>
+    </section>
+    <div id="middle-splitter" role="separator" aria-label="Resize Wizard's Tower" aria-orientation="horizontal" tabindex="0"></div>
+    <section id="terminal-pane">
+      <div id="wizard-header">
+        <h2>Wizard's Tower</h2>
+        <div id="wizard-tabs">
+          <button class="wizard-tab active" data-port="5174" data-name="Merlin" data-tab-id="merlin">🧙 Merlin</button>
+        </div>
+      </div>
+      <div id="terminal-frames">
+        <iframe class="wizard-frame active" data-tab-id="merlin" src="http://127.0.0.1:5174"></iframe>
+      </div>
+    </section>
+    <section id="compliance-footer">
+      <p><strong>Estimates only.</strong> Farm Ledger is not tax advice and not a replacement for a licensed tax preparer. Verify all figures with your CPA before filing.</p>
+    </section>
+  </div>
+  <div id="right-col">
+    <section id="intake-pane">
+      <h2>Shipping Bin</h2>
+      <div id="intake-zone" class="dropzone">Drop a doc — or click to browse</div>
+      <input type="file" id="intake-input" multiple style="display:none">
+      <ul id="intake-recent"></ul>
+    </section>
+    <section id="questions-btn-pane" class="clickable-pane" role="button" tabindex="0" title="Open questions for the CPA">
+      <h2>Open Questions</h2>
+      <p class="pane-hint"><span id="questions-count">0</span> item(s) — click to review</p>
+    </section>
+    <section id="recs-btn-pane" class="clickable-pane" role="button" tabindex="0" title="Ancient One's recommendations">
+      <h2>Recommendations</h2>
+      <p class="pane-hint"><span id="recs-count">0 active / 0 to review</span> →</p>
+    </section>
+    <section id="analytics-btn-pane" class="clickable-pane" role="button" tabindex="0" title="Year-over-year KPIs">
+      <h2>Analytics</h2>
+      <p class="pane-hint">KPIs &amp; trends across years →</p>
+    </section>
+    <section id="summary-pane">
+      <h2>Journal</h2>
+      <div id="missing"></div>
+    </section>
+  </div>
+  <div id="ancient-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="ancient-title">
+    <div id="ancient-box">
+      <button id="ancient-close" aria-label="Close">✕</button>
+      <header id="ancient-header">
+        <h2 id="ancient-title">🔮 The Ancient One</h2>
+        <p class="ancient-subtitle">Senior-partner CPA review · reads your full cross-year profile</p>
+      </header>
+      <div id="ancient-body">
+        <div id="ancient-terminal-col">
+          <div id="ancient-loading">
+            <div class="ancient-glyph">⋆ ✦ ⋆</div>
+            <p>Summoning the Ancient One…</p>
+          </div>
+          <iframe id="ancient-iframe" class="hidden"></iframe>
+        </div>
+        <div id="ancient-recs-col">
+          <h3 class="ancient-recs-title">📜 Past Recommendations</h3>
+          <div id="ancient-recs-content"><em>Loading…</em></div>
+        </div>
+      </div>
+      <footer id="ancient-footer">
+        <button id="ancient-end">End session</button>
+      </footer>
+    </div>
+  </div>
+  <div id="modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="modal-box">
+      <button id="modal-close" aria-label="Close">✕</button>
+      <h2 id="modal-title">Processing…</h2>
+      <div id="modal-body"></div>
+      <div id="modal-actions">
+        <button id="modal-confirm">Confirm &amp; file</button>
+        <button id="modal-cancel">Discard</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

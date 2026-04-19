@@ -1,0 +1,70 @@
+#!/bin/bash
+# Farm Ledger launcher — runs Flask app + ttyd (Claude terminal) and opens browser.
+APP_BIN="$(cd "$(dirname "$0")" && pwd)"
+TAXES_DIR="$(cd "$APP_BIN/../../.." && pwd)"
+cd "$TAXES_DIR" || exit 1
+
+LOG="$TAXES_DIR/Farm Ledger/launch.log"
+exec >>"$LOG" 2>&1
+echo "--- $(date) launching from $TAXES_DIR ---"
+
+# Ensure /opt/homebrew/bin is on PATH (for ttyd + claude under .app context)
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+PY3="$(command -v /opt/homebrew/bin/python3 || command -v python3)"
+if [ ! -d ".venv" ]; then
+  "$PY3" -m venv .venv || {
+    osascript -e 'display alert "Farm Ledger" message "Could not create Python venv. See Farm Ledger/launch.log."'
+    exit 1
+  }
+  ./.venv/bin/pip install -q -r Farm Ledger/requirements.txt || {
+    osascript -e 'display alert "Farm Ledger" message "pip install failed. See Farm Ledger/launch.log."'
+    exit 1
+  }
+fi
+
+# If already running, just reopen the browser
+if curl -s -o /dev/null http://127.0.0.1:5173/; then
+  open "http://127.0.0.1:5173"
+  exit 0
+fi
+
+# Start Flask
+./.venv/bin/python "Farm Ledger/app.py" &
+FLASK_PID=$!
+
+# Start ttyd wrapping the claude CLI, writable, loopback-only. Agent cwd is the
+# data tree so relative paths resolve correctly; Claude Code still finds .claude/
+# and CLAUDE.md by walking up to the project root.
+TTYD="$(command -v ttyd)"
+CLAUDE="$(command -v claude)"
+if [ -n "$TTYD" ] && [ -n "$CLAUDE" ]; then
+  DATA_ROOT_ABS="$TAXES_DIR/Farm Ledger/YearData"
+  XTERM_THEME='{"background":"#000000","foreground":"#ffffff","cursor":"#ffffff","cursorAccent":"#000000","selectionBackground":"rgba(255,255,255,0.3)","black":"#000000","red":"#cd3131","green":"#0dbc79","yellow":"#e5e510","blue":"#2472c8","magenta":"#bc3fbc","cyan":"#11a8cd","white":"#e5e5e5","brightBlack":"#666666","brightRed":"#f14c4c","brightGreen":"#23d18b","brightYellow":"#f5f543","brightBlue":"#3b8eea","brightMagenta":"#d670d6","brightCyan":"#29b8db","brightWhite":"#ffffff"}'
+  "$TTYD" -p 5174 -i 127.0.0.1 -W \
+    -t "fontSize=14" \
+    -t "fontFamily=Menlo, Monaco, 'SF Mono', Consolas, monospace" \
+    -t "lineHeight=1.3" \
+    -t "cursorBlink=true" \
+    -t "cursorStyle=block" \
+    -t "theme=$XTERM_THEME" \
+    bash -lc "cd \"$DATA_ROOT_ABS\" && exec \"$CLAUDE\"" &
+  TTYD_PID=$!
+else
+  echo "ttyd or claude missing — terminal pane will be blank"
+  TTYD_PID=""
+fi
+
+cleanup() {
+  [ -n "$FLASK_PID" ] && kill "$FLASK_PID" 2>/dev/null
+  [ -n "$TTYD_PID" ]  && kill "$TTYD_PID"  2>/dev/null
+}
+trap cleanup EXIT TERM INT
+
+# Wait for Flask then open browser
+for i in {1..30}; do
+  curl -s -o /dev/null http://127.0.0.1:5173/ && { open "http://127.0.0.1:5173"; break; }
+  sleep 0.2
+done
+
+wait $FLASK_PID

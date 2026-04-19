@@ -1,0 +1,37 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Stray personal Claude Code state. Some plugins/hooks resolve $HOME incorrectly
+# and create a literal "~" directory. Never commit these — they contain full
+# conversation history, user email, and organization info.
+~/
+**/~/
+.claude-personal/
+**/.claude-personal/
+
+# User data — never commit a real taxpayer's information to a public repo.
+# All year folders, MDDocs, and generated PDFs live under Farm Ledger/YearData/.
+# Root CLAUDE.md and README.md stay tracked (the app code / docs).
+
+# Entire user data tree
+Farm Ledger/YearData/
+
+# CPA handoff PDFs (belt-and-suspenders: these live in YearData/ but also match anywhere)
+*FYDocumentsPrepared_*.pdf
+
+# Launch / runtime artifacts
+Farm Ledger/launch.log
+.DS_Store
+
+# macOS ad-hoc code signature — machine-specific and regenerated on first launch
+Farm Ledger.app/Contents/_CodeSignature/
+
+# Editor detritus
+.idea/
+.vscode/
+
+# Claude Code local state for this workspace (per-user)
+.claude/settings.local.json
