@@ -4,6 +4,8 @@
 
 A macOS workspace that organizes your tax documents year after year — flags what's missing, cleans up filenames, remembers your whole history, and outputs one clean package for your CPA or for filing it yourself.
 
+*A personal project by **Nigel Edward**.*
+
 ![Farm Ledger — three-pane UI](docs/screenshots/01-hero.png)
 
 ---
@@ -186,4 +188,8 @@ Launch Taxes.command          Fallback terminal launcher.
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+MIT © 2026 Nigel Edward. See [`LICENSE`](LICENSE).
+
+---
+
+Built by **Nigel Edward**.
