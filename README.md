@@ -19,6 +19,7 @@ A macOS workspace that organizes your tax documents year after year — flags wh
 - 📊 **Cross-year analytics** — AGI, tax liability, tax paid, refund, investment net gain/loss, trended across every year you've tracked.
 - 📦 **One package, your choice** — ship a clean dated ZIP to your CPA, or use it as the source of truth for filing it yourself.
 - 🔒 **Local-only, no cloud** — the app binds to `127.0.0.1`. Your SSN, income, and account numbers never leave your machine.
+- 🛡️ **Automatic PII redaction** — every AI read is intercepted before the model sees it. SSN fully stripped, DOB reduced to year, account numbers masked to last 4, street addresses removed (city/state/ZIP kept). Originals stay untouched on disk; only the AI sees the redacted view. A 🔒 badge in the header shows exactly what's protected.
 - 🎨 **Stardew-inspired UI** — because tax software shouldn't be soul-sucking.
 
 ## Screenshots
@@ -81,6 +82,14 @@ Claude reads your files, proposes changes, and drafts the next edit — but ever
 
 - **Why**: Tax documents are legal records. An AI that "helpfully" decides your filing status is a liability, not a feature.
 - **The tradeoff**: More clicks than a fully autonomous workflow. Acceptable, because the cost of a wrong number is real money.
+
+### 3a. PII never reaches the model
+
+A `.claude/hooks/pii-guard.py` hook fires on every `Read` and on `cat`/`head`/`tail`/`less`/`more` Bash commands. Before the content reaches Claude, a Python redactor (`Farm Ledger/pii_redactor.py`) generates a `.redacted.txt` sidecar: SSN fully stripped, DOB reduced to year (`**/**/1990`), account numbers masked to last 4 (`*****4674`), street addresses and PO boxes removed. Names, city, state, ZIP, income amounts, and filing status remain intact.
+
+- **Why**: Even with local-only architecture, "an AI reads my tax return" is a trust question. Addressing it at the tool-use layer means the model *cannot* see an SSN even if instruction-following fails. Defense at the enforcement layer beats defense at the prompt layer.
+- **The tradeoff**: Occasional loss of utility — Claude can't quote a full address back to you, even when you'd want that. Acceptable, because you already know your own data; the AI echoing it is never load-bearing.
+- **Scope today**: Guard runs on every intake, autosync, CPA handoff, and interactive Wizard's Tower read. PDF text is extracted via `pypdf` and redacted into the sidecar; if extraction fails, reads of that file are refused (fail-closed).
 
 ### 4. Years as first-class, not tabs
 
@@ -176,7 +185,8 @@ Launch Taxes.command          Fallback terminal launcher.
 ## Privacy
 
 - **Your tax documents never leave your machine.** The app binds to `127.0.0.1` only; `input/` files are read, classified, and renamed entirely on your local filesystem.
-- **Document classification is done by the Claude CLI you're already signed into** — no separate API key is stored, no third-party service sees your documents beyond what Anthropic normally receives when you use Claude Code.
+- **PII is redacted before any AI read.** Even within your machine, the `pii-guard` hook + `pii_redactor` module strip SSN, DOB (except the year), account numbers (except the last 4), and street addresses (city/state/ZIP kept) from every `Read`/`Bash` tool call Claude makes. Originals on disk are never modified. See Design Decision 3a for how this works and what the tradeoffs are.
+- **Document classification is done by the Claude CLI you're already signed into** — no separate API key is stored, no third-party service sees your documents beyond what Anthropic normally receives when you use Claude Code. Per Anthropic's API policy, inputs are not used to train Claude.
 - **The UI is fully self-contained.** All assets — fonts, icons, styles — are served from the local Flask server. No CDN calls, no analytics, no telemetry.
 - **The only outbound network traffic** comes from the `claude` CLI (model inference against Anthropic's API, authenticated as you) and from Homebrew when installing dependencies.
 
