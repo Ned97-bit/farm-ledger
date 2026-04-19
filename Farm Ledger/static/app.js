@@ -1364,6 +1364,32 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("#ancient-modal").classList.contains("hidden")) closeAncient();
 });
 
+// -------- PII Protected badge callout --------
+(() => {
+  const btn = $("#pii-badge-btn");
+  const callout = $("#pii-callout");
+  if (!btn || !callout) return;
+  const close = () => {
+    callout.classList.add("hidden");
+    btn.setAttribute("aria-expanded", "false");
+  };
+  const open = () => {
+    callout.classList.remove("hidden");
+    btn.setAttribute("aria-expanded", "true");
+  };
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    (callout.classList.contains("hidden") ? open : close)();
+  });
+  document.addEventListener("click", (e) => {
+    if (callout.classList.contains("hidden")) return;
+    if (!callout.contains(e.target) && e.target !== btn) close();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !callout.classList.contains("hidden")) close();
+  });
+})();
+
 // Hook confirm/cancel buttons to also handle wizard mode
 const _origConfirm = $("#modal-confirm").onclick;
 $("#modal-confirm").onclick = async (e) => {

@@ -12,6 +12,30 @@
   <div id="year-dropdown-wrap"></div>
   <div id="tax-day-countdown" class="hidden"></div>
   <button id="new-year-btn" title="Start a new year">+ New Year</button>
+  <div id="pii-badge-wrap">
+    <button id="pii-badge-btn" aria-haspopup="dialog" aria-expanded="false" title="Click to see what's redacted from AI reads">🔒 PII Protected</button>
+    <div id="pii-callout" class="hidden" role="dialog" aria-labelledby="pii-callout-title">
+      <h3 id="pii-callout-title">🔒 PII Protected</h3>
+      <p class="pii-lead">Before any AI assistant reads your files, the guard automatically strips:</p>
+      <dl class="pii-list">
+        <dt>SSN</dt>
+        <dd>Fully redacted → <code>[REDACTED]</code></dd>
+        <dt>Date of Birth</dt>
+        <dd>Year only → <code>**/**/1990</code></dd>
+        <dt>Account numbers</dt>
+        <dd>Last 4 only → <code>*****4674</code><span class="pii-note">(conservative — requires a keyword like "Account" nearby)</span></dd>
+        <dt>Street address</dt>
+        <dd>Street line + apt/suite/PO-box stripped; city, state, ZIP kept</dd>
+      </dl>
+      <p class="pii-lead pii-lead-small">What stays visible in <em>your</em> UI:</p>
+      <ul class="pii-list-basic">
+        <li>Your name, city, state, ZIP</li>
+        <li>Income amounts, filing status, deductions</li>
+        <li>All original PDFs and markdown files (untouched on disk)</li>
+      </ul>
+      <p class="pii-footer">🏠 Your documents never leave this machine. The guard runs every time Claude opens a file.</p>
+    </div>
+  </div>
   <button id="ancient-btn" title="Premium CPA review by the Ancient One">🔮 Consult the Ancient One</button>
   <button id="export-btn" title="Ship CPA package">Ship to CPA</button>
 </header>

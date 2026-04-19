@@ -23,6 +23,7 @@ from flask import Flask, abort, jsonify, request, send_file, render_template
 from checklist import checklist_for as _checklist_for
 import cpa_package
 import quests as quests_store
+from pii_redactor import redact as _redact_pii, redact_file_to_sidecar as _redact_to_sidecar
 
 
 def checklist_for(year: int) -> list:
@@ -794,15 +795,18 @@ PROFILE_SECTIONS = ["Personal", "Income", "Adjustments / Deductions / Credits", 
 
 
 def run_claude_intake(path: Path, year: int, items) -> dict:
-    """Ask Claude CLI to classify a dropped tax document. Returns {} if unavailable."""
+    """Ask Claude CLI to classify a dropped tax document. Returns {} if unavailable.
+    PII guard: markdown context is redacted before inclusion; the dropped file
+    is read by Claude via its `.redacted.txt` sidecar (generated on demand)."""
     claude = shutil.which("claude")
     if not claude:
         return {}
     slot_catalog = "\n".join(f"  - {it.id}: {it.label}" for it in items)
-    profile_md = (year_dir(year) / "Profile.md").read_text()
-    questions_md = (year_dir(year) / "OpenQuestions.md").read_text()
+    profile_md = _redact_pii((year_dir(year) / "Profile.md").read_text())
+    questions_md = _redact_pii((year_dir(year) / "OpenQuestions.md").read_text())
+    read_path = _redact_to_sidecar(path) or path
     prompt = f"""You are a tax document classifier for filing year {year} (tax year {year - 1}).
-Read the file at: {path}
+Read the file at: {read_path}
 
 Current Profile.md:
 ---
@@ -1303,6 +1307,8 @@ def _run_cpa_briefing(year: int, filenames: list[str]) -> dict | None:
     claude = shutil.which("claude")
     if not claude:
         return None
+    # PII guard: ensure every file Claude will read has a redacted sidecar.
+    _generate_redacted_sidecars_for_year(year)
     files_list = "\n".join(f"  - {f}" for f in filenames)
     prompt = (
         f"You are preparing a tax document handoff package for filing year {year} for a licensed "
@@ -1786,11 +1792,42 @@ def _autosync_prompt(year: int) -> str:
     )
 
 
+def _generate_redacted_sidecars_for_year(year: int) -> int:
+    """Create/refresh .redacted.txt sidecars for every user-readable file
+    in a year folder and the shared MDDocs. Returns count of sidecars created
+    or refreshed. Called before any AI run that will read user documents."""
+    count = 0
+    yd = year_dir(year)
+    targets: list[Path] = []
+    for md_name in ("Profile.md", "Files.md", "OpenQuestions.md"):
+        p = yd / md_name
+        if p.is_file():
+            targets.append(p)
+    mddocs = DATA_ROOT / "MDDocs"
+    if mddocs.is_dir():
+        for p in mddocs.glob("*.md"):
+            targets.append(p)
+    inp = input_dir(year)
+    if inp.is_dir():
+        for p in inp.rglob("*"):
+            if p.is_file() and not p.name.startswith(".") and ".redacted" not in p.name:
+                targets.append(p)
+    for t in targets:
+        try:
+            if _redact_to_sidecar(t):
+                count += 1
+        except Exception as e:
+            print(f"[pii] sidecar failed for {t.name}: {type(e).__name__}: {e}", flush=True)
+    return count
+
+
 def _run_autosync(year: int, reason: str) -> None:
     claude = shutil.which("claude")
     if not claude:
         print(f"[autosync] claude CLI missing; skipping sync for {year}")
         return
+    n = _generate_redacted_sidecars_for_year(year)
+    print(f"[autosync] regenerated {n} redacted sidecars for year={year}", flush=True)
     try:
         subprocess.run(
             [claude, "-p", "--permission-mode", "acceptEdits", _autosync_prompt(year)],
