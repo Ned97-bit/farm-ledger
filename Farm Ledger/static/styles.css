@@ -1057,7 +1057,7 @@ section h3 {
 #pii-badge-btn {
   font-family: var(--font-pixel);
   font-size: var(--fs-button);
-  padding: 8px 12px;
+  padding: 8px 10px;
   line-height: 1;
   color: #e8e8ec;
   background: linear-gradient(180deg, #5e6670 0%, #3e4650 100%);
@@ -1066,6 +1066,7 @@ section h3 {
   cursor: pointer;
   text-shadow: 1px 1px 0 #2a3038;
   box-shadow: inset -2px -2px 0 #2a3038, 2px 2px 0 var(--wood-shadow);
+  min-width: 40px;
 }
 #pii-badge-btn:hover { filter: brightness(1.12); }
 #pii-badge-btn:active { transform: translate(2px,2px); box-shadow: inset -2px -2px 0 #2a3038; }
